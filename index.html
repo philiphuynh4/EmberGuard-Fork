@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="Impact" content="Wildfire Risk Map">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <title>FireSource Map</title>
+</head>
+<body>
+    <div class="header text-center">
+        <div>Home</div>
+    </div> 
+
+    <div class="search-container">
+        <input type="text" class="search-box" placeholder="Search">
+        <div class="help-icon">?</div>
+    </div>
+
+    <div class="map-container">
+        <div class="washington-map">
+            <img src="img/Washington_co_lines.png" alt="Washington Map">
+        </div>
+
+        <div class="risk-legend" id="riskLegend">
+            <div class="legend-header">
+                <span>Risk Level</span>
+                <span class="close-button" id="closeButton">×</span>
+            </div>
+            <div class="legend-content">
+                <div class="risk-level">
+                    <div class="risk-indicator">
+                        <div class="risk-dot low-risk"></div>
+                        <span>Low Risk (Minimal Fire Danger)</span>
+                    </div>
+                    <ul class="risk-details">
+                        <li>Continue general fire safety practices.</li>
+                        <li>Have basic emergency plan in case conditions change.</li>
+                        <li>Outdoor burning may be permitted; check local regulations.</li>
+                    </ul>
+                </div>
+
+                <div class="risk-level">
+                    <div class="risk-indicator">
+                        <div class="risk-dot medium-risk"></div>
+                        <span>Medium Risk (Elevated Fire Danger)</span>
+                    </div>
+                    <ul class="risk-details">
+                        <li>Use caution with open flames, sparks or outdoor burning.</li>
+                        <li>Maintain at least 30 feet of defensible space around structures.</li>
+                        <li>Monitor weather updates and fire reports.</li>
+                    </ul>
+                </div>
+
+                <div class="risk-level">
+                    <div class="risk-indicator">
+                        <div class="risk-dot high-risk"></div>
+                        <span>High Risk (Increased Fire Danger)</span>
+                    </div>
+                    <ul class="risk-details">
+                        <li>Be ready to evacuate at short notice.</li>
+                        <li>Watch out for flammable materials (dry leaves, woodpiles) from buildings.</li>
+                        <li>Look out for emergency alerts and real-time fire warnings.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsed-view" id="collapsedView">
+                <div class="risk-indicator">
+                    <div class="risk-dot low-risk"></div>
+                    <span>Low</span>
+                </div>
+                <div class="risk-indicator">
+                    <div class="risk-dot medium-risk"></div>
+                    <span>Medium</span>
+                </div>
+                <div class="risk-indicator">
+                    <div class="risk-dot high-risk"></div>
+                    <span>High</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="navbar">
+        <a href="index.html" class="nav-item">
+            <img class="headerlogo" src="img/map_icon.png" alt="Home">
+            <span>Home</span>
+        </a>
+        <a href="resources.html" class="nav-item">
+            <img class="headerlogo" src="img/resource_icon.png" alt="Resources">
+            <span>Resources</span>
+        </a>
+        <a href="#" class="nav-item">
+            <img class="headerlogo" src="img/profile_icon.png" alt="Profile">
+            <span>Profile</span>
+        </a>
+        <a href="#" class="nav-item">
+            <img class="headerlogo" src="img/setting_icon.png" alt="Settings">
+            <span>Settings</span>
+        </a>
+    </div>
+
+    <script>
+        const riskLegend = document.getElementById('riskLegend');
+        const closeButton = document.getElementById('closeButton');
+        const collapsedView = document.getElementById('collapsedView');
+
+        riskLegend.addEventListener('click', function(e) {
+            if (e.target.closest('#collapsedView') || e.target === riskLegend) {
+                riskLegend.classList.add('expanded');
+                collapsedView.style.display = 'none';
+            }
+        });
+
+        closeButton.addEventListener('click', function(e) {
+            e.stopPropagation();
+            riskLegend.classList.remove('expanded');
+            collapsedView.style.display = 'block';
+        });
+    </script>
+</body>
+</html>

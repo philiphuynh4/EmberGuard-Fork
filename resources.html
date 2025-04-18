@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FireSource</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="resources-page">
+        <div class="container">
+            <h1 class="page-title">Resources</h1>
+            
+            <a href="#" class="resource-button" id="preparation-button">
+                <img class="resource-icon" src="img/receipt-edit.png" alt="Preparation">
+                <div class="section-title">Preparation</div>
+            </a>
+            
+            <a href="#" class="resource-button">
+                <img class="resource-icon" src="img/house.png" alt="House">
+                <div class="section-title">Shelter</div>
+            </a>
+            
+        </div>
+    </div>
+    
+    <div id="preparation-page" style="display: none;">
+        <div class="container">
+            <a href="#" class="back-button" id="back-to-resources">
+                &lt; <span class="page-title h1">Preparation Steps</span>
+            </a>
+            
+            <div class="section-title">Priorities</div>
+            <div class="card">
+                <textarea placeholder="Enter your priorities here"></textarea>
+                <div class="text-muted">Priorities are listed for the user. User can add more priorities if needed.</div>
+            </div>
+            
+            <div class="section-title">Emergency Checklist</div>
+            <div class="card">
+                <div id="checklist-items">
+                    <div class="checklist-item">
+                        <label>
+                            <input type="checkbox">
+                            A 3-day supply of non-perishable food & 3 gallons of water per person
+                            <button class="delete-item">×</button>
+                        </label>
+                    </div>
+                    <div class="checklist-item">
+                        <label>
+                            <input type="checkbox">
+                            A map with at least 2 evacuation routes
+                            <button class="delete-item">×</button>
+                        </label>
+                    </div>
+                    <div class="checklist-item">
+                        <label>
+                            <input type="checkbox">
+                            Necessary prescriptions or medications
+                            <button class="delete-item">×</button>
+                        </label>
+                    </div>
+                    <div class="checklist-item">
+                        <label>
+                            <input type="checkbox">
+                            A change of clothes & extra eyeglasses/contact lenses
+                            <button class="delete-item">×</button>
+                        </label>
+                    </div>
+                    <div class="checklist-item">
+                        <label>
+                            <input type="checkbox">
+                            Extra car keys, credit cards, cash, or traveler's checks
+                            <button class="delete-item">×</button>
+                        </label>
+                    </div>
+                    <div class="checklist-item">
+                        <label>
+                            <input type="checkbox" checked>
+                            A first aid kit & sanitation supplies
+                            <button class="delete-item">×</button>
+                        </label>
+                    </div>
+                    <div class="checklist-item">
+                        <label>
+                            <input type="checkbox">
+                            A flashlight & battery-powered radio with extra batteries
+                            <button class="delete-item">×</button>
+                        </label>
+                    </div>
+                    <div class="checklist-item">
+                        <label>
+                            <input type="checkbox" checked>
+                            Copies of important documents (birth certificates, passports, etc.)
+                            <button class="delete-item">×</button>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="new-item-form" id="new-item-form">
+                    <input type="text" class="new-item-input" id="new-item-input" placeholder="Enter new checklist item">
+                    <button class="submit-item" id="submit-item">Add</button>
+                    <button class="cancel-item" id="cancel-item">Cancel</button>
+                </div>
+                
+                <button class="add-more-button" id="add-more-button">
+                    <span class="icon">+</span> Add more
+                </button>
+            </div>
+            
+            <div class="section-title">Fire Proof Tips</div>
+            <div class="card">
+                <a href="https://www.nfpa.org/education-and-research/home-fire-safety">Home Fire Safety</a>
+                <a href="https://www.fema.gov/sites/default/files/2020-11/fema_protect-your-property_wildfire.pdf">Protect Your Property</a>
+            </div>
+            
+            <div class="section-title">Training & Educational Resources</div>
+            <a href="https://www.nifc.gov/fire-information/fire-prevention-education-mitigation" class="card">
+                Fire Prevention, Education, and Mitigation
+            </a>
+            
+            <div class="section-title">Emergency Contact</div>
+            <div class="card">
+                <input type="tel" placeholder="Phone number">
+            </div>
+            
+        </div>
+    </div>
+
+    <div class="navbar">
+        <a href="index.html" class="nav-item">
+            <img class="headerlogo" src="img/map_icon.png" alt="Home">
+            <span>Home</span>
+        </a>
+        <a href="resources.html" class="nav-item">
+            <img class="headerlogo" src="img/resource_icon.png" alt="Resources">
+            <span>Resources</span>
+        </a>
+        <a href="#" class="nav-item">
+            <img class="headerlogo" src="img/profile_icon.png" alt="Profile">
+            <span>Profile</span>
+        </a>
+        <a href="#" class="nav-item">
+            <img class="headerlogo" src="img/setting_icon.png" alt="Settings">
+            <span>Settings</span>
+        </a>
+    </div>
+
+    <script>
+        document.getElementById('preparation-button').addEventListener('click', function() {
+            document.getElementById('resources-page').style.display = 'none';
+            document.getElementById('preparation-page').style.display = 'block';
+        });
+        
+        document.getElementById('back-to-resources').addEventListener('click', function() {
+            document.getElementById('preparation-page').style.display = 'none';
+            document.getElementById('resources-page').style.display = 'block';
+        });
+        
+        document.getElementById('add-more-button').addEventListener('click', function() {
+            document.getElementById('new-item-form').style.display = 'block';
+            document.getElementById('add-more-button').style.display = 'none';
+            document.getElementById('new-item-input').focus();
+        });
+        
+        document.getElementById('cancel-item').addEventListener('click', function() {
+            document.getElementById('new-item-form').style.display = 'none';
+            document.getElementById('add-more-button').style.display = 'block';
+            document.getElementById('new-item-input').value = '';
+        });
+        
+        document.getElementById('submit-item').addEventListener('click', function() {
+            addNewItem();
+        });
+        
+        document.getElementById('new-item-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addNewItem();
+            }
+        });
+        
+        function addNewItem() {
+            const itemText = document.getElementById('new-item-input').value.trim();
+            if (itemText) {
+                const checklistItems = document.getElementById('checklist-items');
+                
+                const newItem = document.createElement('div');
+                newItem.className = 'checklist-item';
+                
+                const label = document.createElement('label');
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                
+                const textNode = document.createTextNode(' ' + itemText);
+                
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'delete-item';
+                deleteButton.textContent = '×';
+                deleteButton.addEventListener('click', function() {
+                    checklistItems.removeChild(newItem);
+                });
+                
+                label.appendChild(checkbox);
+                label.appendChild(textNode);
+                label.appendChild(deleteButton);
+                newItem.appendChild(label);
+                
+                checklistItems.appendChild(newItem);
+
+                document.getElementById('new-item-input').value = '';
+                document.getElementById('new-item-form').style.display = 'none';
+                document.getElementById('add-more-button').style.display = 'block';
+            }
+        }
+
+        document.querySelectorAll('.delete-item').forEach(button => {
+            button.addEventListener('click', function() {
+                const item = this.closest('.checklist-item');
+                item.parentNode.removeChild(item);
+            });
+        });
+    </script>
+</body>
+</html>
