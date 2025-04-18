@@ -1,0 +1,29 @@
+{
+  "name": "firesource",
+  "version": "1.0.0",
+  "description": "This project aims to give marginalized communities in wildfire-prone areas reliable resources for dealing with wildfires such as accurate predictions, emergency protocols, temporary housing options, etc. By using current wildfire prediction algorithms, we're able to visualize wildfire risks in an easy-to-follow format and also connect users to temporary emergency shelters and additional support.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ginaxtran/FireSource.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ginaxtran/FireSource/issues"
+  },
+  "homepage": "https://github.com/ginaxtran/FireSource#readme",
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "mongodb": "^6.15.0",
+    "mongoose": "^8.13.2",
+    "node-cron": "^3.0.3",
+    "node-fetch": "^2.7.0"
+  }
+}
