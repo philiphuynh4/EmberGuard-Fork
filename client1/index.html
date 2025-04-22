@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1"> <!-- mobile scaling -->
+  <title>WA Wildfire Map</title>
+  <link
+    rel="stylesheet"
+    href="node_modules/leaflet/dist/leaflet.css"
+  > <!-- Leaflet CSS :contentReference[oaicite:3]{index=3} -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="map"></div>
+
+  <!-- legend -->
+  <div class="legend">
+    <div class="legend-item">
+      <span class="legend-circle low"></span>
+      <span>Low</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-circle moderate"></span>
+      <span>Moderate</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-circle high"></span>
+      <span>High</span>
+    </div>
+  </div>
+
+  <div class="navbar">
+    <button id="tab-map" class="active">Map</button>
+    <button id="tab-resources">Resources</button>
+  </div>
+
+  <!-- bottom sheet -->
+  <div id="sheet" class="sheet">
+    <div id="sheet-handle"></div>
+    <div id="sheet-content"></div>
+  </div>
+
+  <script src="node_modules/leaflet/dist/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
