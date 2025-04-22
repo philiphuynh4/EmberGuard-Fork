@@ -26,7 +26,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 // 3. fetch county data via Fetch API :contentReference[oaicite:7]{index=7}
-fetch('http://localhost:3000/api/counties')
+fetch('https://firesource.onrender.com/api/counties')
   .then(res => res.json())
   .then(counties => renderCounties(counties))
   .catch(err => console.error('fetch error:', err));
@@ -50,7 +50,7 @@ function onEachFeature(feature, layer) {
         layer.setStyle(styleByFeature(feature));
       }, 100);
   
-      fetch(`http://localhost:3000/api/counties/${feature.properties.fips}`)
+      fetch(`https://firesource.onrender.com/api/counties/${feature.properties.fips}`)
         .then(r => r.json())
         .then(data => {
           content.innerHTML = `
