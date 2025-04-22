@@ -16,13 +16,19 @@ html, body, #map {
     line-height: 1.3;
   }
   
+  :root {
+    --nav-height: clamp(3rem, 8vh, 4rem);
+    --legend-gap: clamp(0.5rem, 2vh, 1rem);
+  }
+  
   /* legend styling */
   .legend {
     position: absolute;
-    bottom: 80px;
-    left: 10px;
-    background: rgba(255,255,255,0.9);
+    bottom: 5rem;
+    left: 1rem;
+    background: #FFF9F2;
     padding: 8px;
+    border: 1px solid rgba(0, 48, 73, 0.5);
     border-radius: 4px;
     z-index: 900;
   }
@@ -39,7 +45,7 @@ html, body, #map {
     margin-right: 6px;
     opacity: 70% 
   }
-  /* differentiate by opacity or border if you want 3 distinct shades */
+
   .legend-circle.low      { background: #277300; }
   .legend-circle.moderate { background: #FFAA00; }
   .legend-circle.high     { background: #E70000; }
@@ -52,8 +58,8 @@ html, body, #map {
   .navbar {
     position: fixed;
     left: 0; right: 0; bottom: 0;
-    height: 50px;
-    background: #fff;
+    height: var(--nav-height); 
+    background: #FFF9F2;
     display: flex;
     border-top: 1px solid #ccc;
     z-index: 901;
@@ -70,7 +76,7 @@ html, body, #map {
   }
   .navbar button:focus { outline: none; }
   
-  /* bottom sheet (unchanged) */
+  /* bottom sheet */
   .sheet {
     position: absolute;
     left: 0; right: 0; bottom: 0;
