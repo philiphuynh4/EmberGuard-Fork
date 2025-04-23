@@ -123,3 +123,40 @@ function showMap() {
   tabMap.addEventListener('click', showMap);
   tabResources.addEventListener('click', showResources);
 
+  const searchInput = document.getElementById('search-input');
+  const searchBtn   = document.getElementById('search-btn');
+  
+  let searchMarker = null
+
+  // geocode + flyTo helper
+  async function geocodeAndFly(query) {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`
+    const res = await fetch(url, { headers:{'User-Agent':'FireSourceApp/1.0'} })
+    const [result] = await res.json()
+    if (!result) return alert('no results found')
+  
+    const lat = parseFloat(result.lat)
+    const lon = parseFloat(result.lon)
+  
+    if (searchMarker) {
+      map.removeLayer(searchMarker)
+    }
+  
+    map.flyTo([lat, lon], 12)
+  
+    searchMarker = L.marker([lat, lon]).addTo(map)
+  }
+  
+  
+  // handle search
+  searchBtn.addEventListener('click', () => {
+    const q = searchInput.value.trim();
+    if (q) geocodeAndFly(q);
+  });
+  searchInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const q = searchInput.value.trim();
+      if (q) geocodeAndFly(q);
+    }
+  });
+

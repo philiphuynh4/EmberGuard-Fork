@@ -11,21 +11,34 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="map"></div>
+  <div class="search-wrapper">
+    <div class="search-container">
+      <input
+        type="search"
+        id="search-input"
+        placeholder="Search city or ZIP"
+        aria-label="Search map"
+      />
+      <button id="search-btn">🔍</button>
+    </div>
+    <button id="help-btn" class="help-btn">?</button>
+  </div>
+
+  <div id="map"></div>
 
   <!-- legend -->
   <div class="legend">
     <div class="legend-item">
       <span class="legend-circle low"></span>
-      <span>Low</span>
+      <span class="legend-text">Low</span>
     </div>
     <div class="legend-item">
       <span class="legend-circle moderate"></span>
-      <span>Moderate</span>
+      <span class="legend-text">Moderate</span>
     </div>
     <div class="legend-item">
       <span class="legend-circle high"></span>
-      <span>High</span>
+      <span class="legend-text">High</span>
     </div>
   </div>
 
