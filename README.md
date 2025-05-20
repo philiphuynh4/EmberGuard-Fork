@@ -4,4 +4,5 @@ This project aims to give marginalized communities in wildfire-prone areas relia
 Instructions on set up and run: In progress
 
 Presentation Slides: https://www.figma.com/slides/W4blDPxnmv1lO5wlEvXtV6/MVP-Presentation?node-id=1-42&t=2xzWCLPNFCu1WPjI-0
+
 Final Product: In progress
