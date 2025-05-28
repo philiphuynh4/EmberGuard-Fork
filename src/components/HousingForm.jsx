@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
-const TemporaryHousingForm = ({ onClose }) => {
-  const [currentStep, setCurrentStep] = useState(0); // 0 = intro, 1-3 = form steps
+const HousingForm = ({ onClose }) => {
+  const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
     adults: 0,
     children: 0,
@@ -9,14 +9,13 @@ const TemporaryHousingForm = ({ onClose }) => {
     pets: 0,
     accessibilityNeeds: '',
 
-    durationType: 'dates', // 'dates', 'months', 'flexible'
-    stayDuration: 'week', // 'weekend', 'week', 'month'
+    durationType: 'dates',
+    stayDuration: 'week',
     selectedMonth: 'August 2025',
     selectedDates: [],
-    dateFlexibility: 'exact', // 'exact', '±1day', '±2days'
+    dateFlexibility: 'exact',
     preferredLocations: '',
-    housingType: [], // ['house', 'townhouse', 'apartment', 'shared']
-
+    housingType: [],
     sameEmail: 'yes',
     additionalInfo: ''
   });
@@ -560,4 +559,4 @@ const TemporaryHousingForm = ({ onClose }) => {
   );
 };
 
-export default TemporaryHousingForm;
+export default HousingForm;

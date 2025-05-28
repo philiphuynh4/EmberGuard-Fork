@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
-import TemporaryHousingForm from './TemporaryHousingForm';
+import HousingForm from './HousingForm';
+import EmergencyChecklist from './EmergencyChecklist';
 
 const PreparePage = () => {
   const [showHousingForm, setShowHousingForm] = useState(false);
+  const [showChecklistForm, setShowChecklistForm] = useState(false);
 
   const handleResubmit = (itemType) => {
     console.log(`Resubmit ${itemType}`);
     if (itemType === 'temporary housing form') {
       setShowHousingForm(true);
+    } else if (itemType === 'emergency checklist') {
+      setShowChecklistForm(true);
     }
   };
 
@@ -15,20 +19,28 @@ const PreparePage = () => {
     console.log(`View ${itemType}`);
     if (itemType === 'temporary housing form') {
       setShowHousingForm(true);
+    } else if (itemType === 'emergency checklist') {
+      setShowChecklistForm(true);
     }
   };
 
-  const handleCloseForm = () => {
+  const handleCloseHousingForm = () => {
     setShowHousingForm(false);
+  };
+
+  const handleCloseChecklistForm = () => {
+    setShowChecklistForm(false);
   };
 
   return (
     <>
       <div className="h-100 d-flex flex-column bg-white overflow-hidden">
+        {/* Header */}
         <div className="p-4 pb-3">
           <h1 className="text-brand fw-bold mb-0" style={{fontSize: '2.5rem'}}>Prepare</h1>
         </div>
 
+        {/* Content */}
         <div className="flex-grow-1 overflow-auto px-4 pb-5">
           {/* Emergency Checklist Card */}
           <div className="card border-0 shadow-sm mb-4">
@@ -43,7 +55,7 @@ const PreparePage = () => {
               </div>
             </div>
             <div className="card-body p-4">
-              <h3 className="card-title h4 fw-bold mb-3">Emergency checklist</h3>
+              <h3 className="card-title h4 fw-bold mb-3">Emergency Checklist</h3>
               <p className="card-text text-muted mb-4" style={{lineHeight: '1.5'}}>
                 A checklist builder to help you have all your resources in one place in case of an emergency
               </p>
@@ -53,7 +65,7 @@ const PreparePage = () => {
                   onClick={() => handleResubmit('emergency checklist')}
                   style={{color: '#84B5CE', fontSize: '1.1rem'}}
                 >
-                  Resubmit
+                  Redo
                 </button>
                 <button 
                   className="btn text-white px-4 py-2 fw-medium"
@@ -83,7 +95,7 @@ const PreparePage = () => {
               </div>
             </div>
             <div className="card-body p-4">
-              <h3 className="card-title h4 fw-bold mb-3">Temporary housing form</h3>
+              <h3 className="card-title h4 fw-bold mb-3">Temporary Housing Form</h3>
               <p className="card-text text-muted mb-4" style={{lineHeight: '1.5'}}>
                 A short form to apply for temporary housing
               </p>
@@ -112,8 +124,14 @@ const PreparePage = () => {
         </div>
       </div>
 
+      {/* Temporary Housing Form Modal */}
       {showHousingForm && (
-        <TemporaryHousingForm onClose={handleCloseForm} />
+        <HousingForm onClose={handleCloseHousingForm} />
+      )}
+
+      {/* Emergency Checklist Questionnaire Modal */}
+      {showChecklistForm && (
+        <EmergencyChecklist onClose={handleCloseChecklistForm} />
       )}
     </>
   );

@@ -31,7 +31,7 @@ const Onboarding = ({ onClose, onSkip, onNext }) => {
     },
     {
       title: "Before we continue, allow location tracking and notifications for:",
-      description: "You can change these options later in the settings app.",
+      description: "You can change these options later in the profile page.",
       component: "permissions"
     }
   ];
