@@ -1,30 +1,21 @@
-// main server: loads env vars, parses geojson, seeds mongodb, 
-// sets up api endpoints and daily risk updates
-require('dotenv').config()
-console.log('⚙️  index.js loaded')
-console.log('MONGO_URI:', process.env.MONGO_URI ? '✔️ loaded' : '❌ not set')
-console.log(
-  'OPENWEATHER_KEY:',
-  process.env.OPENWEATHER_KEY ? '✔️ loaded' : '❌ not set'
-)
+// server/src/index.js
+require('dotenv').config();
 
-const express = require('express')
-const mongoose = require('mongoose')
-const fs = require('fs')
-const path = require('path')
-const fetch = require('node-fetch')
-const cron = require('node-cron')
+const express = require('express');
+const mongoose = require('mongoose');
+const fetch = require('node-fetch');
+const path = require('path');
+const fs = require('fs');
+const cron = require('node-cron');
+const app = express();
+const cors = require('cors');
+app.use(cors());
 
-// read & parse the GeoJSON
-const geojsonPath = path.join(
-  __dirname,
-  '..',
-  'data',
-  'WA_County_Boundaries.geojson'
-)
-const counties = JSON.parse(fs.readFileSync(geojsonPath, 'utf8'))
+const HousingRequest = require('../models/HousingRequest'); 
 
-// mongoose setup
+const PORT = process.env.PORT || 3000;
+const MONGO_URI = process.env.MONGO_URI;
+
 const CountySchema = new mongoose.Schema({
   countyName: String,
   fips: String,
@@ -32,152 +23,240 @@ const CountySchema = new mongoose.Schema({
   centroid: { lat: Number, lng: Number },
   riskScore: Number,
   riskLevel: String,
-  resources: Object,
-})
-const County = mongoose.model('County', CountySchema)
+  resources: Object
+});
+const County = mongoose.model('County', CountySchema);
 
-const cors = require('cors')            
-const app = express()
-app.use(express.json())
+app.use(express.json());
+app.use(express.static(path.join(__dirname, '../../client1')));
 
-app.use(cors())
-app.use(express.json())
+const geojsonPath = path.join(__dirname, '../data/WA_County_Boundaries.geojson');
+const counties = JSON.parse(fs.readFileSync(geojsonPath, 'utf8'));
 
-/**
- * computeRisk — fetches weather and returns a normalized risk index
- * using only temp, humidity, and wind from OpenWeather.
- * @param {Object} county — must have county.centroid.{lat,lng}
- * @returns {Promise<{score: number, level: string}>}
- */
-async function computeRisk(county) {
-  // 1) grab the raw weather
+function getSamplePoints(county) {
   const { lat, lng } = county.centroid;
-  const apiKey = process.env.OPENWEATHER_KEY;
-  const res = await fetch(
-    `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&units=imperial&appid=${apiKey}`
-  );
-  const data = await res.json();
-  const temp = data.main.temp;       // °F
-  const humidity = data.main.humidity; // 0–100%
-  const wind = data.wind.speed;       // mph
-
-  // 2) normalize each to 0–1
-  //    temp 32–100°F → [0,1]; anything outside clamps
-  const tNorm = Math.min(Math.max((temp - 32) / (100 - 32), 0), 1);
-  //    dryness = inverse humidity
-  const dNorm = (100 - humidity) / 100;
-  //    wind 0–30 mph → [0,1]
-  const wNorm = Math.min(wind / 30, 1);
-
-  // 3) weighted sum (weights sum to 1)
-  const wT = 0.4, wD = 0.35, wW = 0.25;
-  const raw = tNorm * wT + dNorm * wD + wNorm * wW;
-
-  // 4) scale to 0–100 and round to two decimals
-  const score = Math.round(raw * 10000) / 100; // e.g. 42.37
-
-  // 5) bucket into risk levels
-  let level;
-  if (score <= 33) level = 'green';
-  else if (score <= 66) level = 'yellow';
-  else level = 'red';
-
-  return { score, level };
+  const delta = 0.1;
+  return [
+    { lat, lng },
+    { lat: lat + delta, lng: lng + delta },
+    { lat: lat - delta, lng: lng - delta },
+    { lat: lat + delta, lng: lng - delta },
+    { lat: lat - delta, lng: lng + delta },
+  ];
 }
 
-// seed DB once (drops old data to ensure correct fields)
+async function fetchCountyFWIAverage(county) {
+  const apiKey = process.env.OWM_FIRE_KEY;
+  if (!apiKey) throw new Error('Missing OpenWeather Fire API key');
+
+  const coords = getSamplePoints(county);
+  const fwiValues = [];
+
+  for (const { lat, lng } of coords) {
+    try {
+      const res = await fetch(`https://api.openweathermap.org/data/2.5/fwi?lat=${lat}&lon=${lng}&appid=${apiKey}`);
+      const json = await res.json();
+      const fwi = json.list?.[0]?.main?.fwi;
+      if (fwi !== undefined && fwi !== null) {
+        fwiValues.push(fwi);
+      }
+    } catch (err) {
+      console.warn(`❌ FWI fetch failed at ${lat},${lng}`);
+    }
+  }
+
+  if (!fwiValues.length) return null;
+
+  const avgFWI = fwiValues.reduce((a, b) => a + b, 0) / fwiValues.length;
+  return avgFWI;
+}
+
+async function getNWSWeather(lat, lng) {
+  try {
+    const pointsRes = await fetch(`https://api.weather.gov/points/${lat},${lng}`);
+    const pointsData = await pointsRes.json();
+
+    if (!pointsData.properties?.observationStations) {
+      throw new Error(`Invalid NWS points response for lat=${lat}, lng=${lng}`);
+    }
+
+    const stationsRes = await fetch(pointsData.properties.observationStations);
+    const stations = (await stationsRes.json()).observationStations;
+
+    if (!Array.isArray(stations) || stations.length === 0) {
+      throw new Error(`No stations found for lat=${lat}, lng=${lng}`);
+    }
+
+    const weatherData = [];
+    for (let i = 0; i < Math.min(stations.length, 5); i++) {
+      try {
+        const obsRes = await fetch(`${stations[i]}/observations/latest`);
+        const obs = (await obsRes.json()).properties;
+
+        if (obs && obs.temperature && obs.temperature.value !== null) {
+          weatherData.push({
+            temp: obs.temperature.value * 9 / 5 + 32,
+            humidity: obs.relativeHumidity.value,
+            dewPoint: obs.dewpoint?.value ? obs.dewpoint.value * 9 / 5 + 32 : null,
+            windSpeed: obs.windSpeed.value ? obs.windSpeed.value * 0.621371 : 0,
+            windGust: obs.windGust?.value ? obs.windGust.value * 0.621371 : 0,
+            windDir: obs.windDirection.value,
+            precip: obs.precipitationLast24Hours?.value || 0,
+            time: obs.timestamp
+          });
+        }
+      } catch (_) {
+        continue;
+      }
+    }
+
+    if (!weatherData.length) return null;
+
+    const avg = (arr, key) => arr.reduce((sum, x) => sum + (x[key] || 0), 0) / arr.length;
+
+    return {
+      temp: avg(weatherData, 'temp'),
+      humidity: avg(weatherData, 'humidity'),
+      dewPoint: avg(weatherData, 'dewPoint'),
+      windSpeed: avg(weatherData, 'windSpeed'),
+      windGust: avg(weatherData, 'windGust'),
+      windDir: avg(weatherData, 'windDir'),
+      precip: avg(weatherData, 'precip'),
+      daysSinceRain: weatherData.some(d => d.precip > 0)
+        ? 0
+        : (new Date() - new Date(weatherData[0].time)) / (1000 * 60 * 60 * 24)
+    };
+  } catch (err) {
+    console.error('⚠️ getNWSWeather error:', err.message);
+    return null;
+  }
+}
+
+function computeRiskFromWeather(w, opts = {}) {
+  const humidity = w.humidity ?? 50;
+  const daysSinceRain = w.daysSinceRain ?? 3;
+  const windSpeed = w.windSpeed ?? 5;
+  const windGust = w.windGust ?? 0;
+  const temp = w.temp ?? 70;
+  const dewPoint = w.dewPoint ?? 45;
+
+  const dryness = Math.min((100 - humidity), 100);
+  const vaporDeficit = Math.max(temp - dewPoint, 0);
+  const windFactor = Math.min(windSpeed * 1.5 + windGust * 0.5, 100);
+  const drought = Math.min(daysSinceRain * 5, 100);
+
+  const fwi = opts.fwi ?? 0;
+  const fuelDryness = opts.fuelDryness ?? 0;
+  const stability = opts.hainesIndex ?? 0;
+  const topographyScore = opts.topographyScore ?? 10;
+  const wuiExposure = opts.wuiExposure ?? 10;
+  const fireHistoryScore = opts.fireHistoryScore ?? 5;
+
+  let raw = (
+    dryness * 0.15 +
+    vaporDeficit * 0.10 +
+    windFactor * 0.10 +
+    drought * 0.05 +
+    fwi * 0.30 +
+    fuelDryness * 0.10 +
+    stability * 0.05 +
+    topographyScore * 0.05 +
+    wuiExposure * 0.05 +
+    (10 - fireHistoryScore) * 0.05
+  );
+
+  const score = Math.min(Math.round(raw * 10) / 10, 100);
+  let level = 'minimal';
+  if (score >= 70) level = 'extreme';
+  else if (score >= 50) level = 'high';
+  else if (score >= 30) level = 'moderate';
+  else if (score >= 15) level = 'low';
+
+  return { score, level: level.toLowerCase() };
+}
+
 async function seedCounties() {
-  await County.deleteMany({})
+  await County.deleteMany({});
   const docs = counties.features.map(f => {
-    // hacky centroid pick; replace with proper calc if you want
-    const [lng, lat] = f.geometry.coordinates[0][0]
+    const [lng, lat] = f.geometry.coordinates[0][0];
     return {
       countyName: f.properties.JURISDICT_NM,
       fips: f.properties.JURISDICT_FIPS_DESG_CD,
       geometry: f.geometry,
       centroid: { lat, lng },
       riskScore: 0,
-      riskLevel: 'green',
-      resources: {},
-    }
-  })
-  await County.insertMany(docs)
-  console.log('🗄️  seeded counties with defaults')
+      riskLevel: 'minimal',
+      resources: {}
+    };
+  });
+  await County.insertMany(docs);
+  console.log('🌱 counties seeded');
 
-  const all = await County.find()
+  const all = await County.find();
   for (const c of all) {
-    const { score, level } = await computeRisk(c)    // computeRisk uses raw.toFixed(2)
-    c.riskScore = score
-    c.riskLevel = level
-    await c.save()
+    const weather = await getNWSWeather(c.centroid.lat, c.centroid.lng);
+    const fwi = await fetchCountyFWIAverage(c);
+    if (!weather) continue;
+    const { score, level } = computeRiskFromWeather(weather, { fwi });
+    c.riskScore = score;
+    c.riskLevel = level;
+    await c.save();
   }
-  console.log('🔢 computed & saved fresh riskScores')
+  console.log('✅ FWI-enhanced risk computed for all counties');
 }
 
-// cron job to refresh risk at 7am daily
 cron.schedule('0 7 * * *', async () => {
-  console.log('🔄 running daily risk update')
-  const all = await County.find()
-  for (const c of all) {
-    const { score, level } = await computeRisk(c)
-    c.riskScore = score
-    c.riskLevel = level
-    await c.save()
-  }
-  console.log('updated risk levels')
-})
-
-// endpoints
-app.get('/', (req, res) => {
-  res.send('FireSource backend is running. Try /api/counties');
+  console.log('🔄 running daily risk refresh');
 });
+
 app.get('/api/counties', async (req, res) => {
-  const list = await County.find({}, 'countyName fips riskLevel geometry')
-  res.json(list)
-})
+  const list = await County.find({}, 'countyName fips riskLevel geometry');
+  res.json(list);
+});
+
+app.post('/api/housing', async (req, res) => {
+  try {
+    const request = new HousingRequest(req.body);
+    await request.save();
+    res.status(201).json({ success: true, message: 'Request submitted successfully.' });
+  } catch (err) {
+    console.error('Error saving housing request:', err);
+    res.status(500).json({ success: false, error: 'Failed to save request' });
+  }
+});
 
 app.get('/api/counties/:fips', async (req, res) => {
-  // 1. grab the county doc
-  const c = await County.findOne({ fips: req.params.fips });
-  if (!c) return res.status(404).send('not found');
+  const fips = req.params.fips;
+  const county = await County.findOne({ fips });
+  if (!county) return res.status(404).json({ error: 'County not found' });
 
-  // 2. fetch current weather from OpenWeather
-  const { lat, lng } = c.centroid;
-  const apiKey = process.env.OPENWEATHER_KEY;
-  const weatherRes = await fetch(
-    `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&units=imperial&appid=${apiKey}`
-  );
-  const weather = await weatherRes.json();
+  const weather = await getNWSWeather(county.centroid.lat, county.centroid.lng);
+  const fwi = await fetchCountyFWIAverage(county);
+  if (!weather) return res.status(500).json({ error: 'No valid weather data' });
 
-  // 3. send back a combined payload
+  const { score, level } = computeRiskFromWeather(weather, { fwi });
+
   res.json({
-    countyName: c.countyName,
-    fips: c.fips,
-    riskScore: c.riskScore,
-    riskLevel: c.riskLevel,
-    weather: {
-      temp: weather.main.temp,
-      humidity: weather.main.humidity,
-      windSpeed: weather.wind.speed,
-      description: weather.weather[0]?.description || ''
-    },
-    resources: c.resources
+    countyName: county.countyName,
+    fips,
+    riskScore: score,
+    riskLevel: level,
+    weather,
+    fwi,
+    aqi: { index: 25, label: "Good" },
+    recentFires: [{ name: "Demo Fire", year: 2023, size: "12,000", cause: "Lightning", notes: "No structures lost." }],
+    riskFactors: ["Low recent rainfall", "Open grassland", "High wind gust potential"]
   });
 });
 
-const PORT = process.env.PORT || 3000
-
-console.log('⏳ attempting to connect to mongo…')
-mongoose
-  .connect(process.env.MONGO_URI, {/*…*/})
+console.log('⏳ connecting to MongoDB...');
+mongoose.connect(MONGO_URI)
   .then(async () => {
-    console.log('✅ db connected')
-    await seedCounties()
-    app.listen(PORT, () =>
-      console.log(`🚀 server listening on http://localhost:${PORT}`)
-    )
+    console.log('✅ Connected to MongoDB');
+    await seedCounties();
+    app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
   })
   .catch(err => {
-    console.error('❌ db connection error:', err)
-    process.exit(1)
-  })
+    console.error('❌ DB connection error:', err);
+    process.exit(1);
+  });
