@@ -210,8 +210,20 @@ cron.schedule('0 7 * * *', async () => {
 });
 
 app.get('/api/counties', async (req, res) => {
-  const list = await County.find({}, 'countyName fips riskLevel geometry');
-  res.json(list);
+  const counties = await County.find({}, 'countyName fips riskLevel geometry');
+  const geojson = {
+  type: 'FeatureCollection',
+  features: counties.map(c => ({
+    type: 'Feature',
+    geometry: c.geometry,
+    properties: {
+      countyName: c.countyName,
+      fips: c.fips,
+      riskLevel: c.riskLevel
+    }
+  }))
+};
+res.json(geojson);
 });
 
 app.post('/api/housing', async (req, res) => {
