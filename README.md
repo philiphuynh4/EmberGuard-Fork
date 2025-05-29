@@ -4,6 +4,9 @@ This project aims to give marginalized communities in wildfire-prone areas relia
 Instructions on set up and run: 
 1. Download Vscode: https://code.visualstudio.com/ and Node.js: https://nodejs.org/en/download
 2. Pull the link from the repository and open it from the computers terminal.
+3. Install dependencies.
+4. Create server .env folder with MONGODB_URI and PORT.
+5. Seed the database and run the backend server.
 
 Presentation Slides: https://www.figma.com/slides/aiOfTjbJPbVetvpG6M78d3/Capstone-Final-Presentation?node-id=4-531&t=8OYs8XlIKAVHHW5n-0
 
