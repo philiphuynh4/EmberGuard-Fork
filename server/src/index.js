@@ -7,11 +7,15 @@ const fetch = require('node-fetch');
 const path = require('path');
 const fs = require('fs');
 const cron = require('node-cron');
-const app = express();
 const cors = require('cors');
-app.use(cors());
 
-const HousingRequest = require('../models/HousingRequest'); 
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, '../../client1')));
+
+const housingRoutes = require('./routes/housing');
+app.use('/api/housing', housingRoutes);
 
 const PORT = process.env.PORT || 3000;
 const MONGO_URI = process.env.MONGO_URI;
@@ -26,9 +30,6 @@ const CountySchema = new mongoose.Schema({
   resources: Object
 });
 const County = mongoose.model('County', CountySchema);
-
-app.use(express.json());
-app.use(express.static(path.join(__dirname, '../../client1')));
 
 const geojsonPath = path.join(__dirname, '../data/WA_County_Boundaries.geojson');
 const counties = JSON.parse(fs.readFileSync(geojsonPath, 'utf8'));
@@ -66,9 +67,7 @@ async function fetchCountyFWIAverage(county) {
   }
 
   if (!fwiValues.length) return null;
-
-  const avgFWI = fwiValues.reduce((a, b) => a + b, 0) / fwiValues.length;
-  return avgFWI;
+  return fwiValues.reduce((a, b) => a + b, 0) / fwiValues.length;
 }
 
 async function getNWSWeather(lat, lng) {
@@ -76,16 +75,12 @@ async function getNWSWeather(lat, lng) {
     const pointsRes = await fetch(`https://api.weather.gov/points/${lat},${lng}`);
     const pointsData = await pointsRes.json();
 
-    if (!pointsData.properties?.observationStations) {
-      throw new Error(`Invalid NWS points response for lat=${lat}, lng=${lng}`);
-    }
+    if (!pointsData.properties?.observationStations) throw new Error('Invalid NWS points response');
 
     const stationsRes = await fetch(pointsData.properties.observationStations);
     const stations = (await stationsRes.json()).observationStations;
 
-    if (!Array.isArray(stations) || stations.length === 0) {
-      throw new Error(`No stations found for lat=${lat}, lng=${lng}`);
-    }
+    if (!Array.isArray(stations) || stations.length === 0) throw new Error('No stations found');
 
     const weatherData = [];
     for (let i = 0; i < Math.min(stations.length, 5); i++) {
@@ -93,7 +88,7 @@ async function getNWSWeather(lat, lng) {
         const obsRes = await fetch(`${stations[i]}/observations/latest`);
         const obs = (await obsRes.json()).properties;
 
-        if (obs && obs.temperature && obs.temperature.value !== null) {
+        if (obs?.temperature?.value !== null) {
           weatherData.push({
             temp: obs.temperature.value * 9 / 5 + 32,
             humidity: obs.relativeHumidity.value,
@@ -105,13 +100,10 @@ async function getNWSWeather(lat, lng) {
             time: obs.timestamp
           });
         }
-      } catch (_) {
-        continue;
-      }
+      } catch (_) { continue; }
     }
 
     if (!weatherData.length) return null;
-
     const avg = (arr, key) => arr.reduce((sum, x) => sum + (x[key] || 0), 0) / arr.length;
 
     return {
@@ -123,8 +115,7 @@ async function getNWSWeather(lat, lng) {
       windDir: avg(weatherData, 'windDir'),
       precip: avg(weatherData, 'precip'),
       daysSinceRain: weatherData.some(d => d.precip > 0)
-        ? 0
-        : (new Date() - new Date(weatherData[0].time)) / (1000 * 60 * 60 * 24)
+        ? 0 : (new Date() - new Date(weatherData[0].time)) / (1000 * 60 * 60 * 24)
     };
   } catch (err) {
     console.error('⚠️ getNWSWeather error:', err.message);
@@ -212,53 +203,74 @@ cron.schedule('0 7 * * *', async () => {
 app.get('/api/counties', async (req, res) => {
   const counties = await County.find();
   const geojson = {
-  type: 'FeatureCollection',
-  features: counties.map(c => ({
-    type: 'Feature',
-    geometry: c.geometry,
-    properties: {
-      countyName: c.countyName,
-      fips: c.fips,
-      riskLevel: c.riskLevel
-    }
-  }))
-};
-res.json(geojson);
+    type: 'FeatureCollection',
+    features: counties.map(c => ({
+      type: 'Feature',
+      geometry: c.geometry,
+      properties: {
+        countyName: c.countyName,
+        fips: c.fips,
+        riskLevel: c.riskLevel
+      }
+    }))
+  };
+  res.json(geojson);
 });
 
-app.post('/api/housing', async (req, res) => {
+async function fetchAQI(lat, lng) {
+  const apiKey = process.env.OWM_FIRE_KEY;
+  const url = `http://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lng}&appid=${apiKey}`;
+
   try {
-    const request = new HousingRequest(req.body);
-    await request.save();
-    res.status(201).json({ success: true, message: 'Request submitted successfully.' });
+    const res = await fetch(url);
+    const data = await res.json();
+    const index = data.list?.[0]?.main?.aqi;
+
+    const labelMap = {
+      1: "Good",
+      2: "Fair",
+      3: "Moderate",
+      4: "Poor",
+      5: "Very Poor"
+    };
+
+    return {
+      index,
+      label: labelMap[index] || "Unknown"
+    };
   } catch (err) {
-    console.error('Error saving housing request:', err);
-    res.status(500).json({ success: false, error: 'Failed to save request' });
+    console.warn(`⚠️ Failed to fetch AQI:`, err.message);
+    return { index: null, label: "Unavailable" };
   }
-});
+}
 
 app.get('/api/counties/:fips', async (req, res) => {
-  const fips = req.params.fips;
-  const county = await County.findOne({ fips });
-  if (!county) return res.status(404).json({ error: 'County not found' });
+  try {
+    const fips = req.params.fips;
+    const county = await County.findOne({ fips });
+    if (!county) return res.status(404).json({ error: 'County not found' });
 
-  const weather = await getNWSWeather(county.centroid.lat, county.centroid.lng);
-  const fwi = await fetchCountyFWIAverage(county);
-  if (!weather) return res.status(500).json({ error: 'No valid weather data' });
+    const weather = await getNWSWeather(county.centroid.lat, county.centroid.lng);
+    const fwi = await fetchCountyFWIAverage(county);
+    if (!weather) return res.status(500).json({ error: 'No valid weather data' });
 
-  const { score, level } = computeRiskFromWeather(weather, { fwi });
+    const { score, level } = computeRiskFromWeather(weather, { fwi });
+    const aqi = await fetchAQI(county.centroid.lat, county.centroid.lng);
 
-  res.json({
-    countyName: county.countyName,
-    fips,
-    riskScore: score,
-    riskLevel: level,
-    weather,
-    fwi,
-    aqi: { index: 25, label: "Good" },
-    recentFires: [{ name: "Demo Fire", year: 2023, size: "12,000", cause: "Lightning", notes: "No structures lost." }],
-    riskFactors: ["Low recent rainfall", "Open grassland", "High wind gust potential"]
-  });
+    res.json({
+      countyName: county.countyName,
+      fips,
+      riskScore: score,
+      riskLevel: level,
+      weather,
+      fwi,
+      aqi,
+      recentFires: []
+    });
+  } catch (err) {
+    console.error('🔥 /api/counties/:fips error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 console.log('⏳ connecting to MongoDB...');

@@ -6,15 +6,15 @@ const HousingRequestSchema = new mongoose.Schema({
   infants: Number,
   pets: Number,
   accessibilityNeeds: String,
-  stayLength: String,
-  stayStartDate: String, // could be a Date too
-  sameEmail: Boolean,
-  extraNotes: String,
-  email: String,
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
+  durationType: String,
+  stayDuration: String,
+  selectedMonth: String,
+  selectedDates: [String],
+  dateFlexibility: String,
+  preferredLocations: String,
+  housingType: [String],
+  sameEmail: String,
+  additionalInfo: String,
+}, { timestamps: true });
 
 module.exports = mongoose.model('HousingRequest', HousingRequestSchema);
