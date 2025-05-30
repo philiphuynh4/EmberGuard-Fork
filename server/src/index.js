@@ -12,10 +12,14 @@ const cors = require('cors');
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../../client1')));
 
 const housingRoutes = require('./routes/housing');
 app.use('/api/housing', housingRoutes);
+
+const alertsRoutes = require('./routes/alerts');
+app.use('/api/alerts', alertsRoutes); 
+
+app.use(express.static(path.join(__dirname, '../../client1')));
 
 const PORT = process.env.PORT || 3000;
 const MONGO_URI = process.env.MONGO_URI;

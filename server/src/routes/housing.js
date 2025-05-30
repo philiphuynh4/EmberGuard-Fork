@@ -13,8 +13,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-module.exports = router;
-
 router.get('/', async (req, res) => {
   try {
     const requests = await HousingRequest.find().sort({ createdAt: -1 });
@@ -24,3 +22,5 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch requests' });
   }
 });
+
+module.exports = router;
